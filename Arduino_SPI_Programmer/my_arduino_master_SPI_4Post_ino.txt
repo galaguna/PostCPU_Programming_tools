@@ -1,0 +1,64 @@
+//*************************************************************
+// my_arduino_master_SPI_4Post.ino
+//*************************************************************
+// Codigo que implementa una interfaz SPI maestra
+// para transferencias de codigo y datos a sistema
+// de procesamiento soportado por una maquina de Post.
+// El tamaño de las palabras SPI transferidas es de 16 bits.
+//*************************************************************
+// Universidad Autonoma Metropolitana
+// Programadores: Gerardo Laguna y Celso Marquez
+// Fecha: 28 octubre 2026
+//************************************************************
+
+#include "my_master_SPI_byte.h"
+
+#define WORD_SIZE   2 //Bytes (16-bit SPI word)
+
+
+char tx_buffer[WORD_SIZE];
+char rx_buffer[WORD_SIZE];
+
+void setup (void)
+  {
+    // Initialize serial communication at 9600 bits per second:
+    Serial.begin(9600);
+    // Initialize monitoring LED on board: 
+    pinMode(LED_BUILTIN, OUTPUT);
+    // Initialize spi interfaz:
+    init_spi(); 
+  }  // end of setup
+
+void loop (void)
+  {  
+    //Verificar si hay algun dato para leer
+    while (Serial.available() > 0) {
+      //buscar un numero entero, separado por ',' (coma) de forma automatica por la funcion parseInt
+      int num0 = Serial.parseInt();
+      //buscar otro numero entero
+      int num1 = Serial.parseInt();
+      //El salto de linea indica que ya no hay mas datos
+      if (Serial.read() == '\n') {
+      //Se procesan los datos recibidos
+        tx_buffer[0]=(char) num0;
+        tx_buffer[1]=(char) num1;
+
+        ini_spi_transfer();
+        // envia palabra spi: 
+        for (int i=0; i<WORD_SIZE; i++)
+          rx_buffer[i]=spi_byte_transfer(tx_buffer[i]);
+
+        end_spi_transfer();
+
+        //Serial.print("Read bytes from MISO: ");
+        Serial.print(rx_buffer[0],DEC);
+        Serial.print(",");
+        Serial.println(rx_buffer[1],DEC); //Terminamos con '\n'
+      
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay (50); //50 milisegundos
+        digitalWrite(LED_BUILTIN, LOW);
+      }
+    }
+  }  // end of loop
+
